@@ -1,0 +1,6 @@
+!pip install -U ultralytics --extra-index-url https://download.pytorch.org/whl/cu118
+
+import os
+from ultralytics import YOLO
+
+print(" Environment ready and Ultralytics imported successfully!")
