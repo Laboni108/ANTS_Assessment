@@ -177,7 +177,7 @@ model.train(
 ### Why YOLOv8m?
 
 YOLO (You Only Look Once) is a fast and accurate object detection model
-We used the small (s) version because Kaggle's free GPU has limited memory — bigger models like yolov8m or yolov8l would run out of memory at our batch size
+it used the small (s) version because Kaggle's free GPU has limited memory — bigger models like yolov8m or yolov8l would run out of memory at our batch size
 It comes pretrained on COCO, meaning it already knows what humans and cars look like, so we just fine-tuned it on VisDrone instead of training from scratch
 
 ### How it works?
