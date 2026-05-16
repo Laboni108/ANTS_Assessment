@@ -4,21 +4,6 @@
 
 A computer vision pipeline for detecting humans and cars in drone/aerial imagery using YOLOv8, fine-tuned on the VisDrone dataset.
 
----
-
-## Table of Contents
-
-- [Project Overview](#-project-overview)
-- [Setup & Installation](#-setup--installation)
-- [Dataset Understanding & Preprocessing](#-task-01--dataset-understanding--preprocessing)
-- [Model Training](#-task-02--model-training)
-- [Detection & Human Counting](#-task-03--detection--human-counting)
-- [Evaluation & Visualization](#-task-05--evaluation--visualization)
-- [Results](#-results)
-- [Strengths & Limitations](#-strengths--limitations)
-- [Project Structure](#-project-structure)
-
----
 
 ## Project Overview
 
@@ -303,12 +288,13 @@ Each output image includes:
 | mAP@0.5   | ~0.646 | 
 | mAP@0.5:0.95   | ~0.366 |
 
-<img width="1060" height="680" alt="Validation_Statistics" src="https://github.com/user-attachments/assets/b0c5cf08-651e-486c-ba81-2d352974b5cf" />
+<img width="880" height="680" alt="Validation_Statistics" src="https://github.com/user-attachments/assets/b0c5cf08-651e-486c-ba81-2d352974b5cf" />
 
 
 ### Output Samples
 
-<img width="1115" height="650" alt="3" src="https://github.com/user-attachments/assets/4e16f9f8-1df3-4d08-833b-d8a1aff34dc4" />
+<img width="885" height="654" alt="1" src="https://github.com/user-attachments/assets/2ba0a5a3-637c-4784-b6ce-4bff5d1b772d" />
+
 
 
 
