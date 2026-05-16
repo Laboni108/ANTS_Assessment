@@ -9,7 +9,7 @@ A computer vision pipeline for detecting humans and cars in drone/aerial imagery
 
 This project builds an end-to-end aerial object detection pipeline that:
 
-- **Detects** humans (`pedestrian`) and cars (`car`) from drone footage
+- **Detects** humans (`pedestrian` and `people`) and cars (`car`) from drone footage
 - **Counts** total humans visible in each frame/image
 - **Visualizes** detections with labeled bounding boxes and an on-screen count overlay
 
