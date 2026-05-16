@@ -34,7 +34,7 @@ This project builds an end-to-end aerial object detection pipeline that:
 ----
 
 
-## ⚙️ Setup & Installation
+## Setup & Installation
 
 ### Local
 
@@ -118,7 +118,7 @@ while filtering to only train on classes `[0, 1, 3]` via the `classes=` argument
 | **Lighting changes** | Some images are dark or shadowy, which lowers detection confidence |
 | **Class index issue** | VisDrone has 10 classes — I had to keep all 10 in the config file even though I only trained on 3, otherwise YOLO would throw an index error |
 
-> Sample visualizations are in `/outputs/sample_viz/`
+
 ---
 
 ## Model Training
@@ -130,48 +130,52 @@ Fine-tuned **YOLOv8m** (medium) starting from COCO pretrained weights on the Vis
 ```python
 from ultralytics import YOLO
 
-model = YOLO('yolov8m.pt')  # pretrained backbone
+
+model = YOLO('yolov8s.pt')
+
 
 model.train(
-    data='visdrone.yaml',
+    data='/kaggle/working/fixed_data.yaml',
     epochs=100,
-    imgsz=860,          # larger resolution for tiny objects
-    batch=8,
-    lr0=0.001,
-    mosaic=1.0,
-    close_mosaic=15,
-    optimizer='AdamW',
-    patience=20,
-    project='heavy_training',
-    name='final_stable_run'
+    imgsz=960,            
+    batch=4,              
+    classes=[0, 1, 3],     # trains ONLY on Pedestrians(0), People(1), and Cars(3)
+    project='/kaggle/working/heavy_training',
+    name='final_stable_run',
+    device=0,        
+    save_period=10,
+    exist_ok=True,
+    amp=True,              
+    cache=False            
 )
 ```
 
 ### Why YOLOv8m?
 
-- Strong balance of speed vs. accuracy
-- Native support for small object detection at higher `imgsz`
-- Easy integration with VisDrone-formatted data via Ultralytics
-- Pretrained COCO weights give a strong starting point for `car` and `person` categories
+YOLO (You Only Look Once) is a fast and accurate object detection model
+We used the small (s) version because Kaggle's free GPU has limited memory — bigger models like yolov8m or yolov8l would run out of memory at our batch size
+It comes pretrained on COCO, meaning it already knows what humans and cars look like, so we just fine-tuned it on VisDrone instead of training from scratch
+
+### How it works?
+The image is divided into a grid
+Each grid cell predicts bounding boxes and class labels
+It does this in one single pass through the network — that's why it's fast
+We started from pretrained weights and trained further on VisDrone so it could handle aerial/drone-view images specifically
 
 ### Training Configuration
 
 | Parameter | Value |
 |-----------|-------|
 | Base model | `yolov8m.pt` (COCO pretrained) |
-| Image size | `1280 × 1280` |
-| Epochs | 80 |
-| Batch size | 8 |
-| Optimizer | AdamW |
-| LR | 0.001 |
-| Mosaic | Enabled |
+| Image size | `860 × 860` |
+| Epochs | 100 |
+| Batch size | 4 |
 | Platform | Kaggle GPU (T4 x2) |
 
-> Training curves (loss, mAP) are saved in `/outputs/training_plots/`
 
 ---
 
-## 🔎 Task 03 – Detection & Human Counting
+## Task 03 – Detection & Human Counting
 
 ### Inference
 
@@ -191,65 +195,55 @@ results = model.predict(
 ### Human Counting Logic
 
 ```python
-for result in results:
-    boxes = result.boxes
-    # classes 0 (pedestrian) and 1 (people) both count as humans
-    human_count = sum(1 for cls in boxes.cls.tolist() if int(cls) in [0, 1])
-    car_count   = sum(1 for cls in boxes.cls.tolist() if int(cls) == 3)
-    print(f"Humans: {human_count} | Cars: {car_count}")
+ is_human = "pedestrian" in class_name or "people" in class_name or "person" in class_name
+        is_car = "car" in class_name or "van" in class_name or "truck" in class_name
+        
+        if not (is_human or is_car):
+            continue  
+            
+        if is_human:
+            human_count += 1
+            color = COLOR_HUMAN
+            label_prefix = "Human"
+        else:
+            car_count += 1
+            color = COLOR_CAR
+            label_prefix = "Car"
 ```
 
+For each detected object in the image, it checks the class label name:
+
+- If the label contains **"pedestrian"**, **"people"**, or **"person"** → counted as a **Human**
+- If the label contains **"car"**, **"van"**, or **"truck"** → counted as a **Car**
+- Anything else is **skipped**
+
+Based on that:
+- Human detections get a **blue bounding box** and increase the human counter by 1
+- Car detections get a **cyan bounding box** and increase the car counter by 1
+
+At the end, the total human count and car count are displayed on a banner at the top of the image.
 ### Visualization
 
 Each output image includes:
-- **Green bounding boxes** → Humans (pedestrian / people)
-- **Blue bounding boxes** → Cars
+- **Blue bounding boxes** → Humans (pedestrian / people)
+- **Cyan bounding boxes** → Cars
 - **Top-left overlay** → Total human count and car count
 - Confidence score on each box label
 
-> Processed images are saved to `/outputs/predictions/`
 
 ---
 
-## 🎯 Task 04 – Object Tracking (Bonus)
+## Evaluation & Visualization
 
-Object tracking was implemented using **ByteTrack** (built into Ultralytics).
+### Quantitative Results ( Combined avg for car and human )
 
-```python
-model = YOLO('/kaggle/working/heavy_training/final_stable_run/weights/last.pt')
+| Metric | pedestrian | 
+|--------|-----------|
+| Precision | ~0.726 | 
+| Recall    | ~0.601 | 
+| mAP@0.5   | ~0.646 | 
+| mAP@0.5:0.95   | ~0.366 |
 
-results = model.track(
-    source='drone_clip.mp4',
-    tracker='bytetrack.yaml',
-    conf=0.25,
-    classes=[0, 1, 3],
-    save=True,
-    persist=True
-)
-```
-
-ByteTrack was chosen for:
-- High recall even for low-confidence detections (uses both high and low threshold boxes)
-- No appearance features needed (runs fast without a Re-ID model)
-- Native integration into Ultralytics `model.track()`
-
-Each tracked object is assigned a **persistent ID** that follows it across frames, and IDs are displayed on bounding boxes.
-
-> Tracking output video is in `/outputs/tracking/`
-
----
-
-## 📈 Task 05 – Evaluation & Visualization
-
-### Quantitative Results (Val Split)
-
-| Metric | pedestrian | people | car | **All** |
-|--------|-----------|--------|-----|---------|
-| Precision | ~0.52 | ~0.48 | ~0.71 | ~0.57 |
-| Recall    | ~0.45 | ~0.41 | ~0.65 | ~0.50 |
-| mAP@0.5   | ~0.43 | ~0.39 | ~0.62 | ~0.48 |
-
-> *Note: Exact figures may vary — see `/outputs/metrics.csv` for final logged values.*
 
 ### Counting Accuracy
 
@@ -267,58 +261,35 @@ Human counting operates by summing class `0` and class `1` detections per image.
 
 ---
 
-## ✅ Strengths & Limitations
+## Strengths & Limitations
 
-### Strengths
+## Strengths
 
-- **End-to-end pipeline** from raw VisDrone data to annotated inference outputs
-- **High-resolution inference** (1280px) preserves tiny object detail
-- **Multi-class aware counting** merges pedestrian + people into a single human count
-- **ByteTrack integration** gives stable IDs without expensive Re-ID overhead
-- **Modular code** — detection, counting, and visualization are decoupled
+- **Simple and complete pipeline** — It went straight from the raw VisDrone dataset to final detection outputs with minimal setup
+- **Higher resolution training** (`imgsz=960`) helps the model see small objects like distant pedestrians more clearly
+- **Accurate human counting** — both "pedestrian" and "people" labels are correctly merged into a single human count
+- **Clean visualization** — color coded bounding boxes and a count banner make results easy to read at a glance
+- **Mixed precision training (`amp=True`)** — made training faster and used less GPU memory on Kaggle
 
-### Limitations
+## Limitations
 
-- **Tiny objects remain hard** — humans under ~10px are frequently missed at `conf=0.25`
-- **Dense crowd undercounting** — heavily overlapping detections cause merged boxes
-- **No temporal smoothing** for counting in video (count fluctuates frame-to-frame)
-- **Single model** — a SAHI (Slicing Aided Hyper Inference) approach could further boost small-object recall
-- **Training compute** limited to Kaggle free tier (capped epochs/time)
+- **Small objects are still hard to detect** — people that are only a few pixels tall are often missed entirely
+- **Crowded scenes cause undercounting** — when people are packed together, the model sometimes draws one big box instead of individual ones
+- **No tracking** — It only detects objects per image, there is no ID assigned to track the same person across video frames
+- **Small model (`yolov8s`)** —  The small version of YOLOv8 is used due to Kaggle GPU memory limits, a larger model would likely perform better
+- **Kaggle free tier constraints** — limited GPU time and memory meant it could not be trained longer or experiment with bigger models
 
 ### Challenges Faced
 
 - Converting VisDrone's custom annotation format to YOLO `.txt` format correctly (especially handling `score = 0` ignore regions)
-- Managing GPU memory at `imgsz=1280` with batch size — required batch=8 tuning
+- Managing GPU memory at `imgsz=860` with batch size — required batch=4 tuning
 - Class confusion between `pedestrian` and `people` labels (both are counted as human, reducing per-class mAP)
-
+- Last but not least I have my term final going on, so I have 
 ---
 
-## 📁 Project Structure
 
-```
-drone-detection-antlings/
-├── notebooks/
-│   ├── model_training_visualization.ipynb
-│   
-├── src/
-│   ├── convert_annotations.py    # VisDrone → YOLO format
-│   ├── detect_and_count.py       # Inference + human counting
-│   └── visualize.py              # Overlay bounding boxes & count
-├── configs/
-│   └── .yaml             # Dataset config for Ultralytics
-├── outputs/
-│   ├── predictions/              # Annotated output images
-│   ├── tracking/                 # Tracking output video
-│   ├── training_plots/           # Loss & mAP curves
-│   └── sample_viz/               # Dataset sample visualizations
-├── weights/
-│   └── last.pt                   # Final trained model weights
-└── README.md
-```
 
----
-
-## 🔗 References
+## References
 
 - [Ultralytics YOLOv8 Docs](https://docs.ultralytics.com/)
 - [VisDrone Dataset](https://github.com/VisDrone/VisDrone-Dataset)
