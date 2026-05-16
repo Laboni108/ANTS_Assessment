@@ -1,0 +1,117 @@
+import os
+import cv2
+import random
+import matplotlib.pyplot as plt
+from ultralytics import YOLO
+
+# Path to the read-write model checkpoint in your workspace
+MODEL_PATH = "/kaggle/working/last.pt"
+
+# Clean absolute path targeting the test-dev split subfolder directly
+TEST_DATASET_DIR = "/kaggle/input/datasets/banuprasadb/visdrone-dataset/VisDrone_Dataset/VisDrone2019-DET-test-dev/images"
+
+def predict_another_ten_unseen_images(dataset_dir, model_path):
+    # Verification check for the test image folder
+    if not os.path.exists(dataset_dir):
+        print(f"Error: Could not locate test folder at {dataset_dir}")
+        return
+
+    if not os.path.exists(model_path):
+        print(f"Error: Weights checkpoint not found at {model_path}")
+        return
+
+    # Automatically scan the folder to find available image files
+    available_files = [f for f in os.listdir(dataset_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+    
+    if not available_files:
+        print(f"Error: No valid image files found inside {dataset_dir}")
+        return
+        
+    # Shifting to seed 88 isolates a fresh sequence block from the file index array
+    random.seed(88)
+    
+    # Secure 10 unique files from across the directory
+    sample_size = min(10, len(available_files))
+    target_files = random.sample(available_files, sample_size)
+    
+    print(f"Success: Selected {len(target_files)} unique, fresh test images for custom visualization mapping.")
+    print("Loading model checkpoint...")
+    model = YOLO(model_path)
+    
+    # Loop through and process each file one by one
+    for idx, target_file_name in enumerate(target_files, start=1):
+        full_image_path = os.path.join(dataset_dir, target_file_name)
+        
+        print(f"\nProcessing Unseen Image {idx}/10: {target_file_name}")
+        
+        img = cv2.imread(full_image_path)
+        h, w, _ = img.shape
+        
+        # Using the model to extract results coordinates
+        results = model(img, conf=0.25)[0]
+        
+        # Style Variables (BGR Color Configuration)
+        COLOR_CAR = (255, 255, 0)    # Cyan
+        COLOR_HUMAN = (255, 0, 0)    # Deep Blue
+        COLOR_TEXT = (255, 255, 255) # Pure White
+        
+        human_count = 0
+        car_count = 0
+        
+        # Parse through detection array elements to draw boxes and handle filters
+        for box in results.boxes:
+            cls_id = int(box.cls[0])
+            conf = float(box.conf[0])
+            xyxy = box.xyxy[0].cpu().numpy().astype(int)
+            class_name = results.names[cls_id].lower()
+            
+            # String matching rule definition
+            is_human = "pedestrian" in class_name or "people" in class_name or "person" in class_name
+            is_car = class_name == "car"
+            
+            if not (is_human or is_car):
+                continue  
+                
+            if is_human:
+                human_count += 1
+                color = COLOR_HUMAN
+                label_prefix = "Human"
+            else:
+                car_count += 1
+                color = COLOR_CAR
+                label_prefix = "Car"
+                
+            # Drawing object bounding boxes
+            cv2.rectangle(img, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), color, 2)
+            label_text = f"{label_prefix} {conf:.2f}"
+            (text_w, text_h), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.4, 1)
+            cv2.rectangle(img, (xyxy[0], xyxy[1] - text_h - 4), (xyxy[0] + text_w + 4, xyxy[1]), color, -1)
+            cv2.putText(img, label_text, (xyxy[0] + 2, xyxy[1] - 2), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, COLOR_TEXT, 1, cv2.LINE_AA)
+
+        # Create Dashboard Overlay Banner at the top of the image
+        overlay = img.copy()
+        cv2.rectangle(overlay, (0, 0), (w, 65), (0, 0, 0), -1)  
+        img = cv2.addWeighted(overlay, 0.4, img, 0.6, 0)         
+        
+        # Write counting tallies onto the banner
+        cv2.putText(img, f"TOTAL HUMANS COUNTED: {human_count}", (20, 45), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, COLOR_TEXT, 2, cv2.LINE_AA)
+        cv2.putText(img, f"Cars: {car_count}", (w - 180, 45), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, COLOR_CAR, 2, cv2.LINE_AA)
+
+        # Convert matrix array from BGR to RGB format for plotting
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
+        # Present the output frame layout with the tracking header
+        plt.figure(figsize=(16, 10))
+        plt.imshow(img_rgb)
+        plt.title(f"Custom Counting Dashboard [{idx}/10]: {target_file_name}", fontsize=12, pad=10)
+        plt.axis('off')
+        plt.show()
+
+# Run the pipeline for the next 10 unplotted images
+predict_another_ten_unseen_images(
+    dataset_dir=TEST_DATASET_DIR,
+    model_path=MODEL_PATH
+)
