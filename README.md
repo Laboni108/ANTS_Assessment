@@ -104,11 +104,11 @@ while filtering to only train on classes `[0, 1, 3]` via the `classes=` argument
 
 | Challenge | Detail |
 |-----------|--------|
-| **Tiny objects** | People in drone images are very small — sometimes just a few pixels — which makes them hard to detect |
+| **Tiny objects** | People in drone images are very small, sometimes just a few pixels which makes them hard to detect |
 | **Crowded scenes** | When people stand close together, their boxes overlap and some get missed |
 | **Class imbalance** | There are more cars than people in many images, so the model sees fewer human examples |
 | **Lighting changes** | Some images are dark or shadowy, which lowers detection confidence |
-| **Class index issue** | VisDrone has 10 classes — I had to keep all 10 in the config file even though I only trained on 3, otherwise YOLO would throw an index error |
+| **Class index issue** | VisDrone has 10 classes,all 10 classses are kept in the config file even though I only trained on 3, otherwise YOLO would throw an index error |
 | **Blurred images** | Some images are blurred as drones keep moving fast which decreases detection confidence |
 
 ---
@@ -183,8 +183,8 @@ It comes pretrained on COCO, meaning it already knows what humans and cars look 
 ### How it works?
 The image is divided into a grid
 Each grid cell predicts bounding boxes and class labels
-It does this in one single pass through the network — that's why it's fast
-We started from pretrained weights and trained further on VisDrone so it could handle aerial/drone-view images specifically
+It does this in one single pass through the network, that's why it's fast
+It started from pretrained weights and trained further on VisDrone so it could handle aerial/drone-view images specifically
 
 ### Training Configuration
 
@@ -201,7 +201,7 @@ We started from pretrained weights and trained further on VisDrone so it could h
 
 ## Detection & Human Counting
 
-### Outputs
+### Bounding boxes for detection
 
 ```python
  cv2.rectangle(img, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), color, 2)
