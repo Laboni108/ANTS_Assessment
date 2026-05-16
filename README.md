@@ -318,7 +318,6 @@ Each output image includes:
 
 - **Small objects are still hard to detect** — people that are only a few pixels tall are often missed entirely
 - **Crowded scenes cause undercounting** — when people are packed together, the model sometimes draws one big box instead of individual ones
-- **No tracking** — It only detects objects per image, there is no ID assigned to track the same person across video frames
 - **Small model (`yolov8s`)** —  The small version of YOLOv8 is used due to Kaggle GPU memory limits, a larger model would likely perform better
 - **Kaggle free tier constraints** — limited GPU time and memory meant it could not be trained longer or experiment with bigger models
 
