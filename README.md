@@ -51,12 +51,13 @@ print(" Environment ready and Ultralytics imported successfully!")
 VisDrone_Dataset/
 ├── VisDrone2019-DET-train/
 │   ├── images/          # .jpg aerial images
-│   └── annotations/     # .txt files (VisDrone format)
+│   └── labels/     # .txt files (VisDrone format)
 ├── VisDrone2019-DET-val/
 │   ├── images/
-│   └── annotations/
+│   └── labels/
 └── VisDrone2019-DET-test-dev/
-    └── images/
+    ├── images/
+    └── labels/
 ```
 **VisDrone2019-DET** — a large-scale drone-captured object detection benchmark.
 
