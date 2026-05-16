@@ -64,7 +64,7 @@ VisDrone_Dataset/
 |-------|--------|-------------|
 | Train | 6,471  | ~390,000    |
 | Val   | 548    | ~33,000     |
-| Test  | 1,580  | —           |
+| Test  | 1,610  | —           |
 
 **Download:** [Kaggle – VisDrone Dataset](https://www.kaggle.com/datasets/banuprasadb/visdrone-dataset)
 
