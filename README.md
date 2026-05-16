@@ -1,4 +1,4 @@
-<img width="1116" height="662" alt="2" src="https://github.com/user-attachments/assets/4b22cd77-ed63-4ff9-8170-76450602fdf8" />
+
 # ANTS_Assessment
 # Drone Human & Car Detection System
 
@@ -10,10 +10,10 @@ A computer vision pipeline for detecting humans and cars in drone/aerial imagery
 
 - [Project Overview](#-project-overview)
 - [Setup & Installation](#-setup--installation)
-- [Task 01 – Dataset Understanding & Preprocessing](#-task-01--dataset-understanding--preprocessing)
-- [Task 02 – Model Training](#-task-02--model-training)
-- [Task 03 – Detection & Human Counting](#-task-03--detection--human-counting)
-- [Task 04 – Evaluation & Visualization](#-task-05--evaluation--visualization)
+- [Dataset Understanding & Preprocessing](#-task-01--dataset-understanding--preprocessing)
+- [Model Training](#-task-02--model-training)
+- [Detection & Human Counting](#-task-03--detection--human-counting)
+- [Evaluation & Visualization](#-task-05--evaluation--visualization)
 - [Results](#-results)
 - [Strengths & Limitations](#-strengths--limitations)
 - [Project Structure](#-project-structure)
@@ -43,19 +43,22 @@ This project builds an end-to-end aerial object detection pipeline that:
 git clone https://github.com/Laboni108/ANTS_Assessment.git
 cd ANTS_Assessment
 
-pip install ultralytics opencv-python matplotlib pandas PyYAML
 ```
 
 ### Kaggle Notebook
 
 ```python
-# All dependencies are pre-installed on Kaggle
-!pip install ultralytics -q
+!pip install -U ultralytics --extra-index-url https://download.pytorch.org/whl/cu118
+
+import os
+from ultralytics import YOLO
+
+print(" Environment ready and Ultralytics imported successfully!")
 ```
 
 ---
 
-## Task 01 – Dataset Understanding & Preprocessing
+## Dataset Understanding & Preprocessing
 
 ### Dataset Structure
 
@@ -208,20 +211,44 @@ We started from pretrained weights and trained further on VisDrone so it could h
 
 ---
 
-## Task 03 – Detection & Human Counting
+## Detection & Human Counting
 
-### Inference
+### Outputs
 
 ```python
-from ultralytics import YOLO
+ cv2.rectangle(img, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), color, 2)
+            label_text = f"{label_prefix} {conf:.2f}"
+            (text_w, text_h), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.4, 1)
+            cv2.rectangle(img, (xyxy[0], xyxy[1] - text_h - 4), (xyxy[0] + text_w + 4, xyxy[1]), color, -1)
+            cv2.putText(img, label_text, (xyxy[0] + 2, xyxy[1] - 2), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, COLOR_TEXT, 1, cv2.LINE_AA)
 
-model = YOLO('/kaggle/working/heavy_training/final_stable_run/weights/last.pt')
+        # Create Dashboard Overlay Banner at the top of the image
+        overlay = img.copy()
+        cv2.rectangle(overlay, (0, 0), (w, 65), (0, 0, 0), -1)  
+        img = cv2.addWeighted(overlay, 0.4, img, 0.6, 0)         
+        
+        # Write counting tallies onto the banner
+        cv2.putText(img, f"TOTAL HUMANS COUNTED: {human_count}", (20, 45), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, COLOR_TEXT, 2, cv2.LINE_AA)
+        cv2.putText(img, f"Cars: {car_count}", (w - 180, 45), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, COLOR_CAR, 2, cv2.LINE_AA)
 
-results = model.predict(
-    source='/kaggle/input/.../VisDrone2019-DET-val/images',
-    save=True,
-    conf=0.25,
-    classes=[0, 1, 3]   # pedestrian, people, car
+        # Convert matrix array from BGR to RGB format for plotting
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
+        # Present the output frame layout with the tracking header
+        plt.figure(figsize=(16, 10))
+        plt.imshow(img_rgb)
+        plt.title(f"Custom Counting Dashboard [{idx}/10]: {target_file_name}", fontsize=12, pad=10)
+        plt.axis('off')
+        plt.show()
+
+# Run the pipeline for the next 10 unplotted images
+predict_another_ten_unseen_images(
+    dataset_dir=TEST_DATASET_DIR,
+    model_path=MODEL_PATH
+)
 )
 ```
 
@@ -256,7 +283,6 @@ Based on that:
 
 At the end, the total human count and car count are displayed on a banner at the top of the image.
 ### Visualization
-
 Each output image includes:
 - **Blue bounding boxes** → Humans (pedestrian / people)
 - **Cyan bounding boxes** → Cars
@@ -277,20 +303,14 @@ Each output image includes:
 | mAP@0.5   | ~0.646 | 
 | mAP@0.5:0.95   | ~0.366 |
 
+<img width="1060" height="680" alt="Validation_Statistics" src="https://github.com/user-attachments/assets/b0c5cf08-651e-486c-ba81-2d352974b5cf" />
 
-### Counting Accuracy
-
-Human counting operates by summing class `0` and class `1` detections per image. In dense scenes, this closely matches ground truth counts, with some undercounting in heavily occluded crowds.
 
 ### Output Samples
 
-| Input | Output |
-|-------|--------|
-| Aerial crowd scene | Boxes + count overlay |
-| Road intersection | Cars detected, pedestrians labeled |
-| Mixed scene | Both classes, human count = N |
+<img width="1115" height="650" alt="3" src="https://github.com/user-attachments/assets/4e16f9f8-1df3-4d08-833b-d8a1aff34dc4" />
 
-> Full prediction gallery: `/outputs/predictions/`
+
 
 ---
 
@@ -314,11 +334,15 @@ Human counting operates by summing class `0` and class `1` detections per image.
 
 ### Challenges Faced
 
-- Converting VisDrone's custom annotation format to YOLO `.txt` format correctly (especially handling `score = 0` ignore regions)
-- Managing GPU memory at `imgsz=860` with batch size — required batch=4 tuning
-- Class confusion between `pedestrian` and `people` labels (both are counted as human, reducing per-class mAP)
-- Last but not least I have my term final going on, so I have 
----
+ - **GPU memory management** — running at `imgsz=960` with Kaggle's free GPU was tight,
+  so i had to keep the batch size at 4 to avoid running out of memory
+- **Pedestrian vs People labels** — VisDrone has two separate labels for humans
+  ("pedestrian" and "people"), we intentionally merged both into one human count
+  which is correct for counting purposes but slightly lowers the per-class mAP score
+  since the model treats them as two different classes internally
+- **Limited time** — last but not least this project was built under tight time as my university
+  term finals have been going on, so there was limited room for deeper experimentation
+  and fine-tuning
 
 
 
