@@ -295,6 +295,7 @@ Each output image includes:
 
 <img width="885" height="654" alt="1" src="https://github.com/user-attachments/assets/2ba0a5a3-637c-4784-b6ce-4bff5d1b772d" />
 
+<img width="885" height="657" alt="14" src="https://github.com/user-attachments/assets/914db509-aced-4934-91a5-1cd0c81cb24b" />
 
 
 
