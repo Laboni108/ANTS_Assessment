@@ -8,7 +8,6 @@ A computer vision pipeline for detecting humans and cars in drone/aerial imagery
 ## Table of Contents
 
 - [Project Overview](#-project-overview)
-- [Dataset](#-dataset)
 - [Setup & Installation](#-setup--installation)
 - [Task 01 – Dataset Understanding & Preprocessing](#-task-01--dataset-understanding--preprocessing)
 - [Task 02 – Model Training](#-task-02--model-training)
@@ -32,29 +31,16 @@ This project builds an end-to-end aerial object detection pipeline that:
 **Platform:** Kaggle Notebooks (GPU T4 x2)  
 **Classes detected:** `pedestrian (0)`, `people (1)`, `car (3)`
 
----
+----
 
-## Dataset
-
-**VisDrone2019-DET** — a large-scale drone-captured object detection benchmark.
-
-| Split | Images | Annotations |
-|-------|--------|-------------|
-| Train | 6,471  | ~390,000    |
-| Val   | 548    | ~33,000     |
-| Test  | 1,580  | —           |
-
-**Download:** [Kaggle – VisDrone Dataset](https://www.kaggle.com/datasets/banuprasadb/visdrone-dataset)
-
----
 
 ## ⚙️ Setup & Installation
 
 ### Local
 
 ```bash
-git clone https://github.com/<your-username>/drone-detection-antlings.git
-cd drone-detection-antlings
+git clone https://github.com/Laboni108/ANTS_Assessment.git
+cd ANTS_Assessment
 
 pip install ultralytics opencv-python matplotlib pandas PyYAML
 ```
@@ -68,7 +54,7 @@ pip install ultralytics opencv-python matplotlib pandas PyYAML
 
 ---
 
-## 📊 Task 01 – Dataset Understanding & Preprocessing
+## Task 01 – Dataset Understanding & Preprocessing
 
 ### Dataset Structure
 
@@ -83,8 +69,32 @@ VisDrone_Dataset/
 └── VisDrone2019-DET-test-dev/
     └── images/
 ```
+**VisDrone2019-DET** — a large-scale drone-captured object detection benchmark.
 
-**VisDrone Annotation Format (per line):**
+| Split | Images | Annotations |
+|-------|--------|-------------|
+| Train | 6,471  | ~390,000    |
+| Val   | 548    | ~33,000     |
+| Test  | 1,580  | —           |
+
+**Download:** [Kaggle – VisDrone Dataset](https://www.kaggle.com/datasets/banuprasadb/visdrone-dataset)
+**Categories** — Total 10 categories:
+
+| ID | Category |
+|----|----------|
+| 0 | pedestrian |
+| 1 | people |
+| 2 | bicycle |
+| 3 | car |
+| 4 | van |
+| 5 | truck |
+| 6 | tricycle |
+| 7 | awning-tricycle |
+| 8 | bus |
+| 9 | motor |
+---
+
+**VisDrone Annotation Format:**
 ```
 <bbox_left>, <bbox_top>, <bbox_width>, <bbox_height>, <score>, <category>, <truncation>, <occlusion>
 ```
