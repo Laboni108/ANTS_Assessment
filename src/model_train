@@ -1,0 +1,20 @@
+from ultralytics import YOLO
+
+# 1. Load a fresh pre-trained small YOLOv8 weights model
+model = YOLO('yolov8s.pt')
+
+# 2. Fire up the optimized training sequence
+model.train(
+    data='/kaggle/working/fixed_data.yaml',
+    epochs=100,
+    imgsz=960,            
+    batch=4,              
+    classes=[0, 1, 3],     # trains ONLY on Pedestrians(0), People(1), and Cars(3)
+    project='/kaggle/working/heavy_training',
+    name='final_stable_run',
+    device=0,        
+    save_period=10,
+    exist_ok=True,
+    amp=True,              
+    cache=False            
+)
