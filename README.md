@@ -109,7 +109,7 @@ while filtering to only train on classes `[0, 1, 3]` via the `classes=` argument
 | **Class imbalance** | There are more cars than people in many images, so the model sees fewer human examples |
 | **Lighting changes** | Some images are dark or shadowy, which lowers detection confidence |
 | **Class index issue** | VisDrone has 10 classes — I had to keep all 10 in the config file even though I only trained on 3, otherwise YOLO would throw an index error |
-
+| **Blurred images** | Some images are blurred as drones keep moving fast which decreases detection confidence |
 
 ---
 ## Dataset Configuration and Runtime Preprocessing 
