@@ -120,6 +120,38 @@ while filtering to only train on classes `[0, 1, 3]` via the `classes=` argument
 
 
 ---
+## Dataset Configuration and Runtime Preprocessing 
+
+```python
+
+import yaml
+import os
+
+# Define the precise dataset configurations mapping to VisDrone structure
+data_config = {
+    'path': '/kaggle/input/datasets/banuprasadb/visdrone-dataset/VisDrone_Dataset', 
+    'train': 'VisDrone2019-DET-train/images', 
+    'val': 'VisDrone2019-DET-val/images',     
+    'nc': 10, # Keep original indexing bounds intact to prevent YOLO framework mismatches
+    'names': {
+        0: 'pedestrian', 
+        1: 'people', 
+        2: 'bicycle', 
+        3: 'car', 
+        4: 'van',
+        5: 'truck', 
+        6: 'tricycle', 
+        7: 'awning-tricycle', 
+        8: 'bus', 
+        9: 'motor'
+    }
+}
+
+with open('/kaggle/working/fixed_data.yaml', 'w') as f:
+    yaml.dump(data_config, f)
+
+print(" Fixed YAML generated at /kaggle/working/fixed_data.yaml")
+```
 
 ## Model Training
 
@@ -195,20 +227,20 @@ results = model.predict(
 ### Human Counting Logic
 
 ```python
- is_human = "pedestrian" in class_name or "people" in class_name or "person" in class_name
-        is_car = "car" in class_name or "van" in class_name or "truck" in class_name
-        
-        if not (is_human or is_car):
-            continue  
+   is_human = "pedestrian" in class_name or "people" in class_name or "person" in class_name
+            is_car = class_name == "car"
             
-        if is_human:
-            human_count += 1
-            color = COLOR_HUMAN
-            label_prefix = "Human"
-        else:
-            car_count += 1
-            color = COLOR_CAR
-            label_prefix = "Car"
+            if not (is_human or is_car):
+                continue  
+                
+            if is_human:
+                human_count += 1
+                color = COLOR_HUMAN
+                label_prefix = "Human"
+            else:
+                car_count += 1
+                color = COLOR_CAR
+                label_prefix = "Car"
 ```
 
 For each detected object in the image, it checks the class label name:
