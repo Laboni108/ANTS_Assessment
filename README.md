@@ -99,33 +99,29 @@ VisDrone_Dataset/
 <bbox_left>, <bbox_top>, <bbox_width>, <bbox_height>, <score>, <category>, <truncation>, <occlusion>
 ```
 
-### Preprocessing Steps
+### Preprocessing
 
-1. **Format Conversion** — Converted VisDrone annotations to YOLO format (`class cx cy w h`, normalized).
-2. **Class Filtering** — Kept only classes: `0 (pedestrian)`, `1 (people)`, `3 (car)`. Ignored `ignored region (0)` and occluded/truncated instances where score = 0.
-3. **Image Augmentation** applied via Ultralytics built-in augmentation pipeline:
-   - Mosaic (4-image composite)
-   - Random horizontal flip
-   - HSV color jitter
-   - Scale / translate / shear
-   - Copy-paste augmentation for small object density
-4. **Dataset YAML** configured for 3 target classes.
+No manual preprocessing or augmentation were done.
+The raw VisDrone images were used directly with Ultralytics' built-in training pipeline.
+
+The only configuration step was writing a `fixed_data.yaml` file with `nc: 10`
+(all 10 original VisDrone classes) to prevent YOLO framework index mismatches,
+while filtering to only train on classes `[0, 1, 3]` via the `classes=` argument.
 
 ### Key Challenges
 
 | Challenge | Detail |
 |-----------|--------|
-| **Tiny objects** | Humans in drone images are often 5–20px tall — well below standard YOLO anchor sizes |
-| **Severe occlusion** | Dense crowds cause heavy object overlap and missed detections |
-| **Class imbalance** | Cars are overrepresented vs pedestrians in sparse scenes |
-| **Lighting variance** | Morning/evening shots have extreme shadows |
-| **High annotation noise** | Score = 0 entries mark ignore regions and must be excluded |
+| **Tiny objects** | People in drone images are very small — sometimes just a few pixels — which makes them hard to detect |
+| **Crowded scenes** | When people stand close together, their boxes overlap and some get missed |
+| **Class imbalance** | There are more cars than people in many images, so the model sees fewer human examples |
+| **Lighting changes** | Some images are dark or shadowy, which lowers detection confidence |
+| **Class index issue** | VisDrone has 10 classes — I had to keep all 10 in the config file even though I only trained on 3, otherwise YOLO would throw an index error |
 
 > Sample visualizations are in `/outputs/sample_viz/`
-
 ---
 
-## 🏋️ Task 02 – Model Training
+## Model Training
 
 ### Approach
 
@@ -138,8 +134,8 @@ model = YOLO('yolov8m.pt')  # pretrained backbone
 
 model.train(
     data='visdrone.yaml',
-    epochs=80,
-    imgsz=1280,          # larger resolution for tiny objects
+    epochs=100,
+    imgsz=860,          # larger resolution for tiny objects
     batch=8,
     lr0=0.001,
     mosaic=1.0,
@@ -302,15 +298,14 @@ Human counting operates by summing class `0` and class `1` detections per image.
 ```
 drone-detection-antlings/
 ├── notebooks/
-│   ├── 01_dataset_preprocessing.ipynb
-│   ├── 02_model_training.ipynb
-│   └── 03_inference_and_visualization.ipynb
+│   ├── model_training_visualization.ipynb
+│   
 ├── src/
 │   ├── convert_annotations.py    # VisDrone → YOLO format
 │   ├── detect_and_count.py       # Inference + human counting
 │   └── visualize.py              # Overlay bounding boxes & count
 ├── configs/
-│   └── visdrone.yaml             # Dataset config for Ultralytics
+│   └── .yaml             # Dataset config for Ultralytics
 ├── outputs/
 │   ├── predictions/              # Annotated output images
 │   ├── tracking/                 # Tracking output video
